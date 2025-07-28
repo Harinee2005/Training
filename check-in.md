@@ -37,7 +37,7 @@ This is a general architecture and workflow approach for building a Command Line
 **4.validateId()**
   - checks whether id is present in employeeDetails map
     
-**5.hasCheckedInToday()**
+**5.hasCheckedIn()**
   - checks whether id is present in checkedInDetails map
     
 > MAP
