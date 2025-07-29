@@ -15,7 +15,7 @@ data class Employee(
 // Data class to hold Employee Attendance
 data class EmployeeAttendance(
     val employeeId: Int,
-    val checkedInDate: String,
+    val checkedInDate: LocalDate,
     val checkedInTime: LocalTime,
 )
 
@@ -77,10 +77,7 @@ fun listEmployee() {
     }
 }
 
-// Holds CheckedIn data with date as key
-val checkedInDetails = mutableMapOf<String, MutableList<Int>>()
-
-// Holds checkedIn with date and time
+// Holds checkedIn with id, date and time
 val attendanceLog = mutableListOf<EmployeeAttendance>()
 
 // Validates and stores checkedIn details
@@ -91,22 +88,19 @@ fun createCheckIn() {
     val employeeCheckInId = readValidInt("Enter your ID:")
 
     if (validateId(employeeCheckInId)){
-        val checkInDate = LocalDate.now()
-        val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
-        val formattedCheckInDate = checkInDate.format(formatter)
+        val checkInDate = getValidCheckInDate()
         val checkInTime = LocalTime.now()
 
-        if (hasCheckedIn(formattedCheckInDate, employeeCheckInId)){
+        if (hasCheckedIn(checkInDate, employeeCheckInId)){
             println("You already CheckedIn!")
         }
         else{
-            checkedInDetails.getOrPut(formattedCheckInDate) { mutableListOf() }.add(employeeCheckInId)
             val attendance = EmployeeAttendance(
-                employeeCheckInId, formattedCheckInDate, checkInTime
+                employeeCheckInId, checkInDate, checkInTime
             )
             attendanceLog.add(attendance)
 
-            println("Checked In Successfully (${formattedCheckInDate})!")
+            println("Checked In Successfully (${checkInDate})!")
         }
     }
 
@@ -120,29 +114,50 @@ fun validateId(id: Int): Boolean{
     return employeeDetails.containsKey(id)
 }
 
-// Checks whether they already checkedIn
-fun hasCheckedIn(date: String, id: Int):Boolean{
-    val todayCheckedInList = checkedInDetails[date]
-    return todayCheckedInList?.contains(id) == true
+// Validate input date
+fun getValidCheckInDate(): LocalDate {
+    val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
+    println("Enter check-in date (dd-MM-yyyy) or press Enter for today:")
+
+    val input = readln().trim()
+
+    return if (input.isEmpty()) {
+        LocalDate.now()
+    } else {
+        try {
+            val enteredDate = LocalDate.parse(input, formatter)
+            if (enteredDate.isAfter(LocalDate.now())) {
+                println("Future date is not allowed.")
+                getValidCheckInDate()
+            } else {
+                enteredDate
+            }
+        } catch (e: Exception) {
+            println("Invalid date format.")
+            getValidCheckInDate()
+        }
+    }
 }
 
-// It is also used to check whether they already checkedIn or not using attendanceLog
-// fun hasCheckedIn(date: String, id: Int): Boolean {
-//    return attendanceLog.any { it.checkedInDate == date && it.employeeId == id }
-//}
+
+// It is used to check whether they already checkedIn or not using attendanceLog
+fun hasCheckedIn(date: LocalDate, id: Int): Boolean {
+    return attendanceLog.any { it.checkedInDate == date && it.employeeId == id }
+}
 
 fun main(){
-    println("Enter number of employees to add:")
-    var employeesCount = readln().toIntOrNull()
-    while (employeesCount == null){
-        println("Enter valid number of employees to add:")
-        employeesCount = readln().toIntOrNull()
+    println("Add Employee")
+    while (true) {
+        addEmployee()
+
+        println("Do you want to add another employee? (y/n):")
+        val choice = readln()
+        if (choice.lowercase() != "y") {
+            break
+        }
     }
 
-    for (i in 1..employeesCount){
-        addEmployee()
-    }
-    println("Employee Details Updated Successfully!")
+    println("Employee Details added successfully!")
     println("-----------------------------------------------------------------")
     println("Employee List:")
     listEmployee()
