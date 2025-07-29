@@ -1,5 +1,4 @@
-import java.time.LocalDate
-import java.time.LocalTime
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 // Data class to hold Employee Details
@@ -15,8 +14,7 @@ data class Employee(
 // Data class to hold Employee Attendance
 data class EmployeeAttendance(
     val employeeId: Int,
-    val checkedInDate: LocalDate,
-    val checkedInTime: LocalTime,
+    val checkInDateTime: LocalDateTime,
 )
 
 val employeeDetails = mutableMapOf<Int, Employee>()
@@ -52,7 +50,7 @@ fun readValidLong(displayMessage: String): Long {
     println(displayMessage)
     var value = readln().toLongOrNull()
     while (value == null) {
-        println("Invalid input. Please ${displayMessage}")
+        println("Invalid input. Please $displayMessage")
         value = readln().toLongOrNull()
     }
     return value
@@ -88,19 +86,18 @@ fun createCheckIn() {
     val employeeCheckInId = readValidInt("Enter your ID:")
 
     if (validateId(employeeCheckInId)){
-        val checkInDate = getValidCheckInDate()
-        val checkInTime = LocalTime.now()
+        val checkInDateTime = getValidCheckInDateTime()
 
-        if (hasCheckedIn(checkInDate, employeeCheckInId)){
+        if (hasCheckedIn(checkInDateTime, employeeCheckInId)){
             println("You already CheckedIn!")
         }
         else{
             val attendance = EmployeeAttendance(
-                employeeCheckInId, checkInDate, checkInTime
+                employeeCheckInId, checkInDateTime,
             )
             attendanceLog.add(attendance)
 
-            println("Checked In Successfully (${checkInDate})!")
+            println("Checked In Successfully!")
         }
     }
 
@@ -115,34 +112,38 @@ fun validateId(id: Int): Boolean{
 }
 
 // Validate input date
-fun getValidCheckInDate(): LocalDate {
-    val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
-    println("Enter check-in date (dd-MM-yyyy) or press Enter for today:")
+fun getValidCheckInDateTime(): LocalDateTime {
+    val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")
+    println("Enter check-in date and time (dd-MM-yyyy HH:mm) or press Enter for today:")
 
     val input = readln().trim()
 
     return if (input.isEmpty()) {
-        LocalDate.now()
-    } else {
+        LocalDateTime.now()
+    }
+    else {
         try {
-            val enteredDate = LocalDate.parse(input, formatter)
-            if (enteredDate.isAfter(LocalDate.now())) {
+            val enteredDateTime = LocalDateTime.parse(input, formatter)
+            if (enteredDateTime.isAfter(LocalDateTime.now())) {
                 println("Future date is not allowed.")
-                getValidCheckInDate()
+                getValidCheckInDateTime()
             } else {
-                enteredDate
+                enteredDateTime
             }
         } catch (e: Exception) {
             println("Invalid date format.")
-            getValidCheckInDate()
+            getValidCheckInDateTime()
         }
     }
 }
 
 
 // It is used to check whether they already checkedIn or not using attendanceLog
-fun hasCheckedIn(date: LocalDate, id: Int): Boolean {
-    return attendanceLog.any { it.checkedInDate == date && it.employeeId == id }
+fun hasCheckedIn(dateTime: LocalDateTime, id: Int): Boolean {
+    val checkInDate = dateTime.toLocalDate()
+    return attendanceLog.any {
+        it.employeeId == id && it.checkInDateTime.toLocalDate() == checkInDate
+    }
 }
 
 fun main(){
