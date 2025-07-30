@@ -1,178 +1,209 @@
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-// Data class to hold Employee Details
-data class Employee(
+// Data Classes
+data class DataEmployee(
     val id: Int,
     val firstName: String,
     val lastName: String,
     val role: String,
-    val contactNumber: Long,
     val reportingTo: Int,
 )
 
-// Data class to hold Employee Attendance
-data class EmployeeAttendance(
+data class DataAttendance(
     val employeeId: Int,
     val checkInDateTime: LocalDateTime,
 )
 
-val employeeDetails = mutableMapOf<Int, Employee>()
-var employeeId = 0
+// Classes
+class Employee {
+    private val employeeDetails = mutableMapOf<Int, DataEmployee>()
+    private var employeeIdCounter = 101
+    fun addEmployee(firstName: String, lastName: String, role: String, reportingToId: Int): DataEmployee {
+        val employee = DataEmployee(employeeIdCounter, firstName, lastName, role,reportingToId)
+        employeeDetails[employeeIdCounter] = employee
+        employeeIdCounter++
+        return employee
+    }
 
-// Adding employee to the employeeDetails map
-fun addEmployee(){
-    val firstName = readNonEmptyInput("Enter employee ${employeeId + 1} first name:")
-    val lastName = readNonEmptyInput("Enter $firstName's last name:")
-    val role = readNonEmptyInput("Enter $firstName's role:")
-    val contactNo = readValidLong("Enter $firstName's contact number:")
-    val reportingToId = readValidInt("Enter $firstName's reporting to id:")
+    fun listAllEmployees(): List<DataEmployee> {
+        return employeeDetails.values.toList()
+    }
 
-    employeeDetails[employeeId] = Employee(employeeId, firstName, lastName, role, contactNo, reportingToId)
-
-    employeeId++
+    fun isValidEmployeeId(id: Int): Boolean {
+        return employeeDetails.containsKey(id)
+    }
 }
 
-// To avoid empty inputs
-fun readNonEmptyInput(displayMessage: String): String{
-    while (true){
-        println(displayMessage)
-        val input = readln()
-        if (input.isNotEmpty()) {
-            return input
+class Attendance {
+    private val attendanceLog = mutableListOf<DataAttendance>()
+
+    fun checkIn(employeeId: Int, dateTime: LocalDateTime): Boolean {
+        val hasAlreadyCheckedIn = hasCheckedIn(employeeId, dateTime)
+        if (!hasAlreadyCheckedIn) {
+            attendanceLog.add(DataAttendance(employeeId, dateTime))
         }
-        println("Invalid input. Please ${displayMessage}!")
+        return !hasAlreadyCheckedIn
     }
-}
 
-// To validate Long
-fun readValidLong(displayMessage: String): Long {
-    println(displayMessage)
-    var value = readln().toLongOrNull()
-    while (value == null) {
-        println("Invalid input. Please $displayMessage")
-        value = readln().toLongOrNull()
-    }
-    return value
-}
-
-// To validate Int
-fun readValidInt(displayMessage: String): Int {
-    println(displayMessage)
-    var value = readln().toIntOrNull()
-    while (value == null) {
-        println("Invalid input. Please ${displayMessage}!")
-        value = readln().toIntOrNull()
-    }
-    return value
-}
-
-
-// List out employeeId and their name
-fun listEmployee() {
-    for ((id, employee) in employeeDetails) {
-        println("Employee ID: $id, Name: ${employee.firstName} ${employee.lastName}")
-    }
-}
-
-// Holds checkedIn with id, date and time
-val attendanceLog = mutableListOf<EmployeeAttendance>()
-
-// Validates and stores checkedIn details
-fun createCheckIn() {
-    println("-----------------------------------------------------------------")
-    println("Check In.....")
-
-    val employeeCheckInId = readValidInt("Enter your ID:")
-
-    if (validateId(employeeCheckInId)){
-        val checkInDateTime = getValidCheckInDateTime()
-
-        if (hasCheckedIn(checkInDateTime, employeeCheckInId)){
-            println("You already CheckedIn!")
-        }
-        else{
-            val attendance = EmployeeAttendance(
-                employeeCheckInId, checkInDateTime,
-            )
-            attendanceLog.add(attendance)
-
-            println("Checked In Successfully!")
+    private fun hasCheckedIn(employeeId: Int, dateTime: LocalDateTime): Boolean {
+        val checkInDate = dateTime.toLocalDate()
+        return attendanceLog.any {
+            it.employeeId == employeeId && it.checkInDateTime.toLocalDate() == checkInDate
         }
     }
+}
 
-    else{
-        println("Employee ID is invalid")
+// Input validations
+fun validateNonEmptyInput(input: String): Boolean {
+    val trimmed = input.trim()
+    return trimmed.isNotEmpty()
+}
+
+fun validateInt(input: String): Pair<Boolean, Int?> {
+    val number = input.toIntOrNull()
+    return if (number != null) {
+        Pair(true, number)
+    } else {
+        Pair(false, null)
     }
 }
 
-// Check whether the employee id is valid
-fun validateId(id: Int): Boolean{
-    return employeeDetails.containsKey(id)
-}
-
-// Validate input date
-fun getValidCheckInDateTime(): LocalDateTime {
+fun validateDateTime(input: String): Pair<Boolean, LocalDateTime?> {
     val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")
-    println("Enter check-in date and time (dd-MM-yyyy HH:mm) or press Enter for today:")
-
-    val input = readln().trim()
-
-    return if (input.isEmpty()) {
-        LocalDateTime.now()
-    }
-    else {
+    return if (input.isBlank()) {
+        Pair(true, LocalDateTime.now())
+    } else {
         try {
-            val enteredDateTime = LocalDateTime.parse(input, formatter)
-            if (enteredDateTime.isAfter(LocalDateTime.now())) {
-                println("Future date is not allowed.")
-                getValidCheckInDateTime()
-            } else {
-                enteredDateTime
+            val parsed = LocalDateTime.parse(input, formatter)
+            if (parsed.isAfter(LocalDateTime.now())){
+                Pair(false, null)
+            }
+            else {
+                Pair(true, parsed)
             }
         } catch (e: Exception) {
-            println("Invalid date format.")
-            getValidCheckInDateTime()
+            Pair(false, null)
         }
     }
 }
 
+// Main function
+fun main() {
+    val employee = Employee()
+    val attendance = Attendance()
 
-// It is used to check whether they already checkedIn or not using attendanceLog
-fun hasCheckedIn(dateTime: LocalDateTime, id: Int): Boolean {
-    val checkInDate = dateTime.toLocalDate()
-    return attendanceLog.any {
-        it.employeeId == id && it.checkInDateTime.toLocalDate() == checkInDate
-    }
-}
-
-fun main(){
-    println("Add Employee")
     while (true) {
-        addEmployee()
+        println("Menu: \n1. AddEmployee \n2. List Employees \n3. Check-In \n4. Exit \nEnter your choice: ")
+        when (readln().trim()) {
+            "1" -> {
+                println("Add Employees:")
+                while (true) {
+                    var firstName = ""
+                    while (!validateNonEmptyInput(firstName)) {
+                        println("Enter first name:")
+                        firstName = readln()
+                        if (!validateNonEmptyInput(firstName)) {
+                            println("Invalid input.")
+                        }
+                    }
 
-        println("Do you want to add another employee? (y/n):")
-        val choice = readln()
-        if (choice.lowercase() != "y") {
-            break
-        }
-    }
+                    var lastName = ""
+                    while (!validateNonEmptyInput(lastName)){
+                        println("Enter last name:")
+                        lastName = readln()
+                        if (!validateNonEmptyInput(lastName)){
+                            println("Invalid input.")
+                        }
+                    }
 
-    println("Employee Details added successfully!")
-    println("-----------------------------------------------------------------")
-    println("Employee List:")
-    listEmployee()
+                    var role = ""
+                    while (!validateNonEmptyInput(role)){
+                        println("Enter role:")
+                        role = readln()
+                        if (!validateNonEmptyInput(role)){
+                            println("Invalid input.")
+                        }
+                    }
 
-    while(true){
-        createCheckIn()
+                    var reportingTo: Int? = null
+                    while (reportingTo == null) {
+                        println("Enter reporting to ID:")
+                        val input = readln()
+                        val (isValid, id) = validateInt(input)
+                        if (isValid && id != null) {
+                            reportingTo = id
+                        } else {
+                            println("Invalid input.")
+                        }
+                    }
 
-        println("Type 'exit' to stop or press Enter to continue:")
-        val userInput = readln()
+                    val addedEmployee = employee.addEmployee(firstName, lastName, role, reportingTo)
+                    println("Successfully added! \nEmployee ID ${addedEmployee.id}: ${addedEmployee.firstName} ${addedEmployee.lastName}")
 
-        if (userInput.lowercase() == "exit") {
-            println("Exiting check-in!")
-            println("-----------------------------------------------------------------")
-            break
+                    println("Add another employee? (y/n):")
+                    if (readln().trim().lowercase() != "y") {
+                        break
+                    }
+                }
+            }
+
+            "2" -> {
+                println("Employee List:")
+                val allEmployeeDetails = employee.listAllEmployees()
+                if (allEmployeeDetails.isEmpty()) {
+                    println("No employees found.")
+                } else {
+                    for (emp in allEmployeeDetails) {
+                        println("ID: ${emp.id}, Name: ${emp.firstName} ${emp.lastName}, Role: ${emp.role}")
+                    }
+                }
+            }
+
+            "3" -> {
+                println("Check-In")
+                while (true) {
+                    var employeeId: Int? = null
+                    while (employeeId == null) {
+                        println("Enter your employee ID:")
+                        val (isValid, id) = validateInt(readln())
+                        if (isValid && id != null && employee.isValidEmployeeId(id)) {
+                            employeeId = id
+                        } else {
+                            println("Invalid or ID not found.")
+                        }
+                    }
+
+                    var checkInTime: LocalDateTime? = null
+                    while (checkInTime == null) {
+                        println("Enter check-in date and time (dd-MM-yyyy HH:mm) or press Enter for now:")
+                        val (isValid, dateTime) = validateDateTime(readln())
+                        if (isValid && dateTime != null) {
+                            checkInTime = dateTime
+                        } else {
+                            println("Invalid or future date. Try again.")
+                        }
+                    }
+
+                    if (attendance.checkIn(employeeId, checkInTime)) {
+                        println("Checked in successfully!")
+                    } else {
+                        println("Already checked in.")
+                    }
+
+                    println("Type 'exit' to stop or press Enter to check in another:")
+                    if (readln().trim().lowercase() == "exit") break
+                }
+            }
+
+            "4" -> {
+                println("Ending Attendance!")
+                break
+            }
+
+            else -> {
+                println("Invalid choice. Try again.")
+            }
         }
     }
 }
