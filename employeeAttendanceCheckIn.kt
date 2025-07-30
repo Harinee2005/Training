@@ -1,7 +1,7 @@
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-// Data Classes
+// Data Classes to hold employee data and attendance data
 data class DataEmployee(
     val id: Int,
     val firstName: String,
@@ -15,10 +15,11 @@ data class DataAttendance(
     val checkInDateTime: LocalDateTime,
 )
 
-// Classes
+// Classes to manage employee and attendance
 class Employee {
     private val employeeDetails = mutableMapOf<Int, DataEmployee>()
     private var employeeIdCounter = 101
+
     fun addEmployee(firstName: String, lastName: String, role: String, reportingToId: Int): DataEmployee {
         val employee = DataEmployee(employeeIdCounter, firstName, lastName, role,reportingToId)
         employeeDetails[employeeIdCounter] = employee
@@ -60,7 +61,7 @@ fun validateNonEmptyInput(input: String): Boolean {
     return trimmed.isNotEmpty()
 }
 
-fun validateInt(input: String): Pair<Boolean, Int?> {
+fun validateIntInput(input: String): Pair<Boolean, Int?> {
     val number = input.toIntOrNull()
     return if (number != null) {
         Pair(true, number)
@@ -69,6 +70,7 @@ fun validateInt(input: String): Pair<Boolean, Int?> {
     }
 }
 
+// Date time validations
 fun validateDateTime(input: String): Pair<Boolean, LocalDateTime?> {
     val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")
     return if (input.isBlank()) {
@@ -130,7 +132,7 @@ fun main() {
                     while (reportingTo == null) {
                         println("Enter reporting to ID:")
                         val input = readln()
-                        val (isValid, id) = validateInt(input)
+                        val (isValid, id) = validateIntInput(input)
                         if (isValid && id != null) {
                             reportingTo = id
                         } else {
@@ -166,7 +168,7 @@ fun main() {
                     var employeeId: Int? = null
                     while (employeeId == null) {
                         println("Enter your employee ID:")
-                        val (isValid, id) = validateInt(readln())
+                        val (isValid, id) = validateIntInput(readln())
                         if (isValid && id != null && employee.isValidEmployeeId(id)) {
                             employeeId = id
                         } else {
