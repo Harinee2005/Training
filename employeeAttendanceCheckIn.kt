@@ -36,7 +36,7 @@ class Employee {
     }
 }
 
-class Attendance {
+class Attendance() {
     private val attendanceLog = mutableListOf<DataAttendance>()
 
     fun checkIn(employeeId: Int, dateTime: LocalDateTime): Boolean {
@@ -94,6 +94,8 @@ fun validateDateTime(input: String): Pair<Boolean, LocalDateTime?> {
 fun main() {
     val employee = Employee()
     val attendance = Attendance()
+
+    employee.addEmployee("John", "Doe", "Manager", 0)
 
     while (true) {
         println("Menu: \n1. AddEmployee \n2. List Employees \n3. Check-In \n4. Exit \nEnter your choice: ")
