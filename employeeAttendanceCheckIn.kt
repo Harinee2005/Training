@@ -1,3 +1,4 @@
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -13,6 +14,8 @@ data class DataEmployee(
 data class DataAttendance(
     val employeeId: Int,
     val checkInDateTime: LocalDateTime,
+    var checkOutDateTime: LocalDateTime? = null,
+    var workingHours: Double? = null
 )
 
 // Classes to manage employee and attendance
@@ -21,7 +24,7 @@ class Employee {
     private var employeeIdCounter = 101
 
     fun addEmployee(firstName: String, lastName: String, role: String, reportingToId: Int) {
-        val employee = DataEmployee(employeeIdCounter, firstName, lastName, role,reportingToId)
+        val employee = DataEmployee(employeeIdCounter, firstName, lastName, role, reportingToId)
         employeeDetails[employeeIdCounter] = employee
         employeeIdCounter++
     }
@@ -42,17 +45,57 @@ class Attendance() {
         val hasAlreadyCheckedIn = hasCheckedIn(employeeId, dateTime)
         if (!hasAlreadyCheckedIn) {
             attendanceLog.add(DataAttendance(employeeId, dateTime))
+            return true
+        } else {
+            return false  
         }
-        return !hasAlreadyCheckedIn
     }
-
+    
     private fun hasCheckedIn(employeeId: Int, dateTime: LocalDateTime): Boolean {
         val checkInDate = dateTime.toLocalDate()
         return attendanceLog.any {
             it.employeeId == employeeId && it.checkInDateTime.toLocalDate() == checkInDate
         }
     }
+
+    fun checkOut(employeeId: Int, dateTime: LocalDateTime): Boolean {
+        val checkOutDate = dateTime.toLocalDate()
+
+        if (hasCheckedOut(employeeId, dateTime)) {
+            return false
+        }
+
+        val attendanceRecord = attendanceLog.find {
+            it.employeeId == employeeId && it.checkInDateTime.toLocalDate() == checkOutDate
+        } ?: return false
+
+        if (dateTime.isBefore(attendanceRecord.checkInDateTime)) {
+            return false
+        }
+        if (dateTime.isAfter(LocalDateTime.now())) {
+            return false
+        }
+
+        attendanceRecord.checkOutDateTime = dateTime
+        val duration = Duration.between(attendanceRecord.checkInDateTime, dateTime)
+        attendanceRecord.workingHours = duration.toMinutes() / 60.0
+        return true
+    }
+
+    private fun hasCheckedOut(employeeId: Int, dateTime: LocalDateTime): Boolean {
+        val checkOutDate = dateTime.toLocalDate()
+        return attendanceLog.any {
+            it.employeeId == employeeId &&
+                    it.checkInDateTime.toLocalDate() == checkOutDate &&
+                    it.checkOutDateTime != null
+        }
+    }
+
+    fun getAllAttendance(): List<DataAttendance> {
+        return attendanceLog.toList()
+    }
 }
+
 
 // Input validations
 fun validateNonEmptyInput(input: String): Boolean {
@@ -77,15 +120,40 @@ fun validateDateTime(input: String): Pair<Boolean, LocalDateTime?> {
     } else {
         try {
             val parsed = LocalDateTime.parse(input, formatter)
-            if (parsed.isAfter(LocalDateTime.now())){
-                Pair(false, null)
-            }
-            else {
-                Pair(true, parsed)
-            }
+            Pair(true, parsed)
         } catch (e: Exception) {
             Pair(false, null)
         }
+    }
+}
+
+// Working hours format
+fun formatWorkingHours(hours: Double?): String {
+    return if (hours == null) {
+        "N/A"
+    } else {
+        "%.2f hrs".format(hours)
+    }
+}
+
+// Print attendance report
+fun printAttendance(attendanceLog: List<DataAttendance>) {
+    if (attendanceLog.isEmpty()) {
+        println("No attendance records found.")
+        return
+    }
+    val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")
+    for (record in attendanceLog) {
+        println("Employee ID: ${record.employeeId}")
+        println("Check-In: ${record.checkInDateTime.format(formatter)}")
+        if (record.checkOutDateTime != null) {
+            println("Check-Out: ${record.checkOutDateTime?.format(formatter)}")
+            println("Working Hours: ${formatWorkingHours(record.workingHours)}")
+        } else {
+            println("Check-Out: Not yet checked out")
+            println("Working Hours: N/A")
+        }
+        println("---------------------------------------")
     }
 }
 
@@ -97,7 +165,8 @@ fun main() {
     employee.addEmployee("John", "Doe", "Manager", 0)
 
     while (true) {
-        println("Menu: \n1. AddEmployee \n2. List Employees \n3. Check-In \n4. Exit \nEnter your choice: ")
+        println("Menu: \n1. Add Employee \n2. List Employees \n3. Check-In \n4. Check-Out \n5. View Attendance Records " +
+                "\n6. Exit \nEnter your choice: ")
         when (readln().trim()) {
             "1" -> {
                 println("Add Employees:")
@@ -141,7 +210,7 @@ fun main() {
                         }
                     }
 
-                    val addedEmployee = employee.addEmployee(firstName, lastName, role, reportingTo)
+                    employee.addEmployee(firstName, lastName, role, reportingTo)
                     println("Successfully added!")
 
                     println("Add another employee? (y/n):")
@@ -182,9 +251,13 @@ fun main() {
                         println("Enter check-in date and time (dd-MM-yyyy HH:mm) or press Enter for now:")
                         val (isValid, dateTime) = validateDateTime(readln())
                         if (isValid && dateTime != null) {
-                            checkInTime = dateTime
+                            if (dateTime.isAfter(LocalDateTime.now())) {
+                                println("Check-in cannot be in the future. Try again.")
+                            } else {
+                                checkInTime = dateTime
+                            }
                         } else {
-                            println("Invalid or future date. Try again.")
+                            println("Invalid date format. Try again.")
                         }
                     }
 
@@ -200,6 +273,52 @@ fun main() {
             }
 
             "4" -> {
+                println("Check-Out")
+                while (true) {
+                    var employeeId: Int? = null
+                    while (employeeId == null) {
+                        println("Enter your employee ID:")
+                        val (isValid, id) = validateIntInput(readln())
+                        if (isValid && id != null && employee.isValidEmployeeId(id)) {
+                            employeeId = id
+                        } else {
+                            println("Invalid or ID not found.")
+                        }
+                    }
+
+                    var checkOutTime: LocalDateTime? = null
+                    while (checkOutTime == null) {
+                        println("Enter check-out date and time (dd-MM-yyyy HH:mm) or press Enter for now:")
+                        val (isValid, dateTime) = validateDateTime(readln())
+                        if (isValid && dateTime != null) {
+                            if (dateTime.isAfter(LocalDateTime.now())) {
+                                println("Check-out cannot be in the future. Try again.")
+                            } else {
+                                checkOutTime = dateTime
+                            }
+                        } else {
+                            println("Invalid date format. Try again.")
+                        }
+                    }
+
+                    val result = attendance.checkOut(employeeId, checkOutTime)
+                    if (result) {
+                        println("Checked out successfully!")
+                    } else {
+                        println("Cannot check out!")
+                    }
+
+                    println("Type 'exit' to stop or press Enter to check out another:")
+                    if (readln().trim().lowercase() == "exit") break
+                }
+            }
+
+            "5" -> {
+                println("Attendance Records:")
+                printAttendance(attendance.getAllAttendance())
+            }
+
+            "6" -> {
                 println("Ending Attendance!")
                 break
             }
