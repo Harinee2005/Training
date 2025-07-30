@@ -1,9 +1,9 @@
-# EMPLOYEE CHECK-IN
+# EMPLOYEE ATTENDANCE
 
 > OVERVIEW
 
-This project is a Command Line Interface (CLI) based Employee Check-In System implemented in Kotlin.  
-It manages employee records, and tracks daily check-ins, ensuring each employee can check in only once per day.
+This project is a Command Line Interface (CLI) based Employee Check-In & Check-out System implemented in Kotlin.  
+It manages employee records, and tracks daily check-ins ad check-outs.
 
 > DATA CLASSES
 
@@ -18,7 +18,9 @@ It manages employee records, and tracks daily check-ins, ensuring each employee 
 **2. DataAttendance**
 
   - `employeeId: Int`
-  - `checkInDateTime: LocalDateTime` 
+  - `checkInDateTime: LocalDateTime`
+  - `checkOutDateTime: LocalDateTime`
+  - `workingHours: Double`
 
 > CLASSES & FUNCTIONS
 
@@ -36,10 +38,10 @@ It manages employee records, and tracks daily check-ins, ensuring each employee 
 **2. Attendance**
 
 - `checkIn(employeeId: Int, dateTime: LocalDateTime): Boolean`  
-  Records a check-in and also ensure no duplicate check-ins on the same date.
-
 - `hasCheckedIn(employeeId: Int, dateTime: LocalDateTime): Boolean` (private)  
-  Helper function to check if the employee has already checked in on the given date.
+- `checkOut(employeeId: Int, dateTime: LocalDateTime): Boolean`
+- `hasCheckedOut(employeeId: Int, dateTime: LocalDateTime): Boolean` (private)
+- `getAllAttendance(): List<DataAttendance>`
 
 > INPUT VALIDATIONS
 
@@ -52,3 +54,6 @@ It manages employee records, and tracks daily check-ins, ensuring each employee 
 - `validateDateTime(input: String): Pair<Boolean, LocalDateTime?>`  
   Parses date-time string (format: `"dd-MM-yyyy HH:mm"`) or current date-time if blank.
   It also doesn't allow future dates.
+
+- `fun formatWorkingHours(hours: Double?): String `
+- `fun printAttendance(attendanceLog: List<DataAttendance>)`
