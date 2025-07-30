@@ -20,11 +20,10 @@ class Employee {
     private val employeeDetails = mutableMapOf<Int, DataEmployee>()
     private var employeeIdCounter = 101
 
-    fun addEmployee(firstName: String, lastName: String, role: String, reportingToId: Int): DataEmployee {
+    fun addEmployee(firstName: String, lastName: String, role: String, reportingToId: Int) {
         val employee = DataEmployee(employeeIdCounter, firstName, lastName, role,reportingToId)
         employeeDetails[employeeIdCounter] = employee
         employeeIdCounter++
-        return employee
     }
 
     fun listAllEmployees(): List<DataEmployee> {
@@ -143,7 +142,7 @@ fun main() {
                     }
 
                     val addedEmployee = employee.addEmployee(firstName, lastName, role, reportingTo)
-                    println("Successfully added! \nEmployee ID ${addedEmployee.id}: ${addedEmployee.firstName} ${addedEmployee.lastName}")
+                    println("Successfully added!")
 
                     println("Add another employee? (y/n):")
                     if (readln().trim().lowercase() != "y") {
